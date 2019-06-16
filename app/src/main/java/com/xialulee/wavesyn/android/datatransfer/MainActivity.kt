@@ -1,11 +1,9 @@
 package com.xialulee.wavesyn.android.datatransfer
 
 import android.content.*
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Build
 import android.net.Uri
-import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 
@@ -18,62 +16,6 @@ import kotlin.collections.HashMap
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.*
 import java.lang.Exception
-
-open class ActivityEx : AppCompatActivity() {
-
-    data class ResultArgs(
-        val requestCode: Int,
-        val resultCode: Int,
-        val data: Intent?
-    )
-
-    data class PermissionArgs(
-        val requestCode: Int,
-        val permissions: Array<out String>,
-        val grantResults: IntArray
-    )
-
-    private val requestMap = HashMap<Int, (ResultArgs)->Unit>()
-    private val permissionMap = HashMap<Int, (PermissionArgs)->Unit>()
-
-    protected fun getDownloadDirectory(): String {
-        return getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).toString()
-    }
-
-    protected fun activityDo(intent: Intent, block: (ResultArgs)->Unit) {
-        var id = 0
-        for (i in 0 until 4096) {
-            if (!requestMap.containsKey(i)) {
-                id = i
-                break
-            }
-        }
-        requestMap[id] = block
-        startActivityForResult(intent, id)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        requestMap.remove(requestCode)?.invoke(ResultArgs(requestCode, resultCode, data))
-    }
-
-    protected fun permittedToDo(permission: String, block: (PermissionArgs)->Unit) {
-        var id = 0
-        for (i in 0 until 4096) {
-            if (!permissionMap.containsKey(i)) {
-                id = i
-                break
-            }
-        }
-        permissionMap[id] = block
-        requestPermissions(arrayOf(permission), id)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        permissionMap.remove(requestCode)?.invoke(PermissionArgs(requestCode, permissions, grantResults))
-    }
-}
 
 
 data class ScanResult(
@@ -281,7 +223,6 @@ class MainActivity : ActivityEx() {
             |Media files are in gallery.""".trimMargin()
 
         val shareIntent = intent
-        //Log.d("intent", shareIntent.action)
         var shareStream: InputStream? = null
         var shareFileName = ""
         if (intent.action == "android.intent.action.SEND") {
@@ -304,7 +245,6 @@ class MainActivity : ActivityEx() {
         funMap["write&clipboard&"] = this::recvClipbText
         funMap["write&storage:image&dir:Download"] = this::recvImage
         funMap["write&storage:file&dir:Download"] = this::recvFile
-        //storage:file
 
         val scanIntent =
             Intent()

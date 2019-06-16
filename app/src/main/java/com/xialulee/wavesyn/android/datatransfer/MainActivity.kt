@@ -85,27 +85,7 @@ class MainActivity : ActivityEx() {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        textView.text = """Ordinary files can be found in
-            |${getDownloadDirectory()}.
-            |Media files are in gallery.""".trimMargin()
-
-//        val shareIntent = intent
-//        var shareStream: InputStream? = null
-//        var shareFileName = ""
-//        if (intent.action == "android.intent.action.SEND") {
-//            val shareUri = shareIntent.extras?.get("android.intent.extra.STREAM") as Uri
-//            shareStream = contentResolver.openInputStream(shareUri)
-//            if (shareStream != null && shareUri != null) {
-//                val fullPath = shareUri.toString()
-//                val pathArr = fullPath.split("/")
-//                shareFileName = pathArr[pathArr.size-1]
-//            }
-//        }
-
+    private fun startTransfer() {
         val scanIntent =
             Intent()
                 .setAction("com.google.zxing.client.android.SCAN")
@@ -126,6 +106,17 @@ class MainActivity : ActivityEx() {
                 else -> ::doNothing
             }.invoke(scanResult!!)
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        textView.text = """Ordinary files can be found in
+            |${getDownloadDirectory()}.
+            |Media files are in gallery.""".trimMargin()
+
+        startTransfer()
     }
 
 }

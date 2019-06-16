@@ -32,7 +32,8 @@ fun sendBytes(scanResult: ServerInfo, data: ByteArray) {
     }
 }
 
-fun sendFile(scanResult: ServerInfo, fileName: String, stream: InputStream) {
+fun sendFile(scanResult: ServerInfo, fileName: String, stream: InputStream?) {
+    stream ?: return
     thread {
         Socket(scanResult.ip, scanResult.port).use {
             val outp = DataOutputStream(it.getOutputStream())

@@ -7,8 +7,6 @@ import android.provider.MediaStore
 import android.util.Log
 
 import org.json.JSONObject
-import kotlin.collections.HashMap
-
 
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.*
@@ -16,7 +14,6 @@ import java.lang.Exception
 
 
 class MainActivity : ActivityEx() {
-    val funMap = HashMap<String, (ServerInfo)->Unit>()
 
     private fun makeClipboardJson(): ByteArray {
         val clipText = readClipboard()
@@ -36,6 +33,18 @@ class MainActivity : ActivityEx() {
             val uri = it.data?.data
             sendBytes(scanResult, readUriBytes(uri))
         }
+    }
+
+    private fun sendIntentUri(scanResult: ServerInfo) {
+        if (intent.action != "android.intent.action.SEND") return
+        val uri = intent.extras?.get("android.intent.extra.STREAM") as Uri
+        uri ?: return
+        val stream = contentResolver.openInputStream(uri)
+        stream ?: return
+        val fullPath = uri.toString()
+        val pathArr = fullPath.split("/")
+        val fileName = pathArr[pathArr.size-1]
+        sendFile(scanResult, fileName, stream)
     }
 
     private fun recvClipboardText(serverInfo: ServerInfo) {
@@ -67,12 +76,11 @@ class MainActivity : ActivityEx() {
             val item = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
             item ?: return@permittedToDo
 
-            val pfd = contentResolver.openFileDescriptor(item, "w", null)
-            val fobj = FileOutputStream(pfd?.fileDescriptor)
+            val fobj = contentResolver.openOutputStream(item)
+            fobj ?: return@permittedToDo
             recvStream(scanResult, fobj) {
                 startActivity(Intent(Intent.ACTION_VIEW, item))
                 fobj.close()
-                pfd?.close()
             }
         }
     }
@@ -85,29 +93,18 @@ class MainActivity : ActivityEx() {
             |${getDownloadDirectory()}.
             |Media files are in gallery.""".trimMargin()
 
-        val shareIntent = intent
-        var shareStream: InputStream? = null
-        var shareFileName = ""
-        if (intent.action == "android.intent.action.SEND") {
-            val shareUri = shareIntent.extras?.get("android.intent.extra.STREAM") as Uri
-            shareStream = contentResolver.openInputStream(shareUri)
-            if (shareStream != null && shareUri != null) {
-                val fullPath = shareUri.toString()
-                val pathArr = fullPath.split("/")
-                shareFileName = pathArr[pathArr.size-1]
-            }
-        }
-
-        funMap["read&clipboard&"] = this::sendClipboardText
-        funMap["read&gallery&"] = this::sendGalleryPhoto
-        funMap["read&storage&"] = {scanResult ->
-            if (shareStream != null) {
-                sendFile(scanResult, shareFileName, shareStream)
-            }
-        }
-        funMap["write&&clipboard"] = this::recvClipboardText
-        funMap["write&storage:image&dir:Download"] = this::recvImage
-        funMap["write&storage:file&dir:Download"] = this::recvFile
+//        val shareIntent = intent
+//        var shareStream: InputStream? = null
+//        var shareFileName = ""
+//        if (intent.action == "android.intent.action.SEND") {
+//            val shareUri = shareIntent.extras?.get("android.intent.extra.STREAM") as Uri
+//            shareStream = contentResolver.openInputStream(shareUri)
+//            if (shareStream != null && shareUri != null) {
+//                val fullPath = shareUri.toString()
+//                val pathArr = fullPath.split("/")
+//                shareFileName = pathArr[pathArr.size-1]
+//            }
+//        }
 
         val scanIntent =
             Intent()
@@ -118,7 +115,16 @@ class MainActivity : ActivityEx() {
             val scanResult = parseBarcode(it.data?.getStringExtra("SCAN_RESULT"))
             scanResult ?: return@activityDo
             val command = "${scanResult.action}&${scanResult.source}&${scanResult.target}"
-            funMap.get(command)?.invoke(scanResult)
+            fun doNothing(serverInfo: ServerInfo) = null
+            when (command) {
+                "read&clipboard&"                  -> this::sendClipboardText
+                "read&gallery&"                    -> this::sendGalleryPhoto
+                "read&storage&"                    -> this::sendIntentUri
+                "write&&clipboard"                 -> this::recvClipboardText
+                "write&storage:image&dir:Download" -> this::recvImage
+                "write&storage:file&dir:Download"  -> this::recvFile
+                else -> ::doNothing
+            }.invoke(scanResult!!)
         }
     }
 

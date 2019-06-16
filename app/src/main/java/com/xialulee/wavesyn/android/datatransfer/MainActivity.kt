@@ -25,6 +25,18 @@ class MainActivity : ActivityEx() {
         return content
     }
 
+    private fun sendGPS(serverInfo: ServerInfo) {
+        readGPS {
+            val pos = JSONObject()
+                .put("latitude", it.latitude)
+                .put("longitude", it.longitude)
+                .put("altitude", it.altitude)
+                .toString()
+            val data = JSONObject().put("data", pos).toString().toByteArray()
+            sendBytes(serverInfo, data)
+        }
+    }
+
     private fun sendClipboardText(serverInfo: ServerInfo) = sendBytes(serverInfo, makeClipboardJson())
 
     private fun sendGalleryPhoto(scanResult: ServerInfo) {
@@ -100,6 +112,7 @@ class MainActivity : ActivityEx() {
                 "read&clipboard&"                  -> this::sendClipboardText
                 "read&gallery&"                    -> this::sendGalleryPhoto
                 "read&storage&"                    -> this::sendIntentUri
+                "read&location_sensor&"            -> this::sendGPS
                 "write&&clipboard"                 -> this::recvClipboardText
                 "write&storage:image&dir:Download" -> this::recvImage
                 "write&storage:file&dir:Download"  -> this::recvFile

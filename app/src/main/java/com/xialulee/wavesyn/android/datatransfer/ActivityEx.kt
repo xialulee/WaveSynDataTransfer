@@ -1,8 +1,13 @@
 package com.xialulee.wavesyn.android.datatransfer
+import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.content.*
+import android.location.Location
 import android.os.Environment
 import android.net.Uri
+import android.location.LocationManager
+import android.location.LocationListener
+import android.os.Bundle
 
 open class ActivityEx : AppCompatActivity() {
 
@@ -48,6 +53,26 @@ open class ActivityEx : AppCompatActivity() {
         val clipData = ClipData.newPlainText("text", text)
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(clipData)
+    }
+
+    @SuppressLint("MissingPermission")
+    protected fun readGPS(block: (Location)->Unit) {
+
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        permittedToDo("android.permission.ACCESS_FINE_LOCATION") {
+            locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, object : LocationListener {
+                override fun onLocationChanged(p0: Location?) {
+                    p0 ?: return
+                    block(p0)
+                }
+
+                override fun onProviderDisabled(p0: String?) {}
+
+                override fun onProviderEnabled(p0: String?) {}
+
+                override fun onStatusChanged(p0: String?, p1: Int, p2: Bundle?) {}
+            }, null)
+        }
     }
 
     protected fun activityDo(intent: Intent, onFinished: (ResultArgs)->Unit) {

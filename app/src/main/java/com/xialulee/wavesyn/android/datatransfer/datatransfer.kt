@@ -53,7 +53,7 @@ fun sendFile(scanResult: ServerInfo, fileName: String, stream: InputStream) {
     }
 }
 
-fun recvBytes(scanResult: ServerInfo, onFinish: ((ByteArray)->Unit)?) {
+fun recvBytes(scanResult: ServerInfo, onFinished: ((ByteArray)->Unit)?) {
     thread {
         Socket(scanResult.ip, scanResult.port).use {
             val inp = it.getInputStream()
@@ -61,7 +61,7 @@ fun recvBytes(scanResult: ServerInfo, onFinish: ((ByteArray)->Unit)?) {
             sendHead(outp, scanResult.password)
             outp.writeInt(0)
             val bytes = inp.readBytes()
-            onFinish?.invoke(bytes)
+            onFinished?.invoke(bytes)
         }
     }
 }

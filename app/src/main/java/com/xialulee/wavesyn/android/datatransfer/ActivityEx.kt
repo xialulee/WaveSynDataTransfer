@@ -2,6 +2,7 @@ package com.xialulee.wavesyn.android.datatransfer
 import androidx.appcompat.app.AppCompatActivity
 import android.content.*
 import android.os.Environment
+import android.net.Uri
 
 open class ActivityEx : AppCompatActivity() {
 
@@ -24,7 +25,32 @@ open class ActivityEx : AppCompatActivity() {
         return getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).toString()
     }
 
-    protected fun activityDo(intent: Intent, block: (ResultArgs)->Unit) {
+    protected fun readUriBytes(uri: Uri?): ByteArray {
+        uri?: return ByteArray(0)
+        val stream = contentResolver.openInputStream(uri)
+        val bytes = stream?.readBytes()
+        bytes?: return ByteArray(0)
+        return bytes
+    }
+
+    protected fun readClipboard(): String {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clipText =
+            clipboard
+                .primaryClip
+                ?.getItemAt(0)
+                ?.coerceToText(applicationContext)
+                .toString()
+        return clipText
+    }
+
+    protected fun writeClipboard(text: String) {
+        val clipData = ClipData.newPlainText("text", text)
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(clipData)
+    }
+
+    protected fun activityDo(intent: Intent, onFinished: (ResultArgs)->Unit) {
         var id = 0
         for (i in 0 until 4096) {
             if (!requestMap.containsKey(i)) {
@@ -32,7 +58,7 @@ open class ActivityEx : AppCompatActivity() {
                 break
             }
         }
-        requestMap[id] = block
+        requestMap[id] = onFinished
         startActivityForResult(intent, id)
     }
 
